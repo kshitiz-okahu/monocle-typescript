@@ -18,6 +18,7 @@ import { PatchedBatchSpanProcessor } from './opentelemetryUtils';
 import { AWSS3SpanExporter } from '../../exporters/aws/AWSS3SpanExporter'
 import { consoleLog } from '../../common/logging';
 import { setScopesInternal, getScopesInternal, setScopesBindInternal, load_scopes, setInstrumentor, startTraceInternal } from './utils';
+
 class MonocleInstrumentation extends InstrumentationBase {
     constructor(config = {}) {
         super('MonocleInstrumentation', "1.0", config)
@@ -103,12 +104,23 @@ class MonocleInstrumentation extends InstrumentationBase {
                 return this._onRequire(module, exports, name, baseDir);
             };
             const onRequire = (exports, name: string, baseDir: string) => {
-                if (module.name !== name && module.name.includes(baseDir + "/" + name)) {
+                try{
+                    if (module.name !== name) {
+                        if(module.name.includes(path.join(baseDir, name))){
+                            // @ts-ignore: private field access required
+                            return this._onRequire(module, exports, module.name, baseDir);
+                        }
+                        
+                        
+                    }
                     // @ts-ignore: private field access required
-                    return this._onRequire(module, exports, module.name, baseDir);
+                    return this._onRequire(module, exports, name, baseDir);
                 }
-                // @ts-ignore: private field access required
-                return this._onRequire(module, exports, name, baseDir);
+                catch(err){
+                    consoleLog("Error in onRequire:" + err)
+                    return exports
+                }
+                
             };
             // `RequireInTheMiddleSingleton` does not support absolute paths.
             // For an absolute paths, we must create a separate instance of the
