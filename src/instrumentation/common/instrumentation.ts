@@ -377,3 +377,5 @@ export function getScopes(): Record<string, string> {
 }
 
 export { setupMonocle };
+
+export { MonocleInstrumentation, addSpanProcessors };
